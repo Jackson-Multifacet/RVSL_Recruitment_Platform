@@ -1,0 +1,255 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: candidates
+    // Document ID: userId
+    // Fields: fullName, email, phone, role, etc.
+    //
+    // Collection: staff
+    // Document ID: userId
+    // Fields: fullName, email, role, etc.
+    //
+    // Collection: applications
+    // Document ID: auto-generated
+    // Fields: candidateId, jobId, status, etc.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDeletionRequested(data) {
+      return 'deletionRequestedAt' in data;
+    }
+
+    function canAdminDelete(data) {
+      return isAdmin() && isDeletionRequested(data) && 
+             (request.time >= timestamp(data.deletionRequestedAt) + duration.value(14, 'd'));
+    }
+
+    function isUserBlocked(userId) {
+      // This is expensive if used everywhere, but necessary for "not able to do anything"
+      // We can check if the user's own document has deletionRequestedAt
+      // Since we can't easily check other collections without get(), 
+      // we'll rely on the app to block UI and rules to block specific actions.
+      return false; // Placeholder for logic if we had a better way
+    }
+
+    function isStaff() {
+      return isAuthenticated() && 
+        (
+         ('email' in request.auth.token && request.auth.token.email == "faithjohnjackson@gmail.com") ||
+         exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+        );
+    }
+
+    function isClient() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/clients/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (
+         ('email' in request.auth.token && request.auth.token.email == "faithjohnjackson@gmail.com") ||
+         (exists(/databases/$(database)/documents/staff/$(request.auth.uid)) && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches('^.+@.+\\..+$');
+    }
+
+    function isValidJob(data) {
+      return data.keys().hasAll(['title', 'company', 'location', 'type', 'description', 'postedAt']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.company is string && data.company.size() > 0 &&
+             data.location is string && data.location.size() > 0 &&
+             data.type in ['Full-time', 'Part-time', 'Contract'] &&
+             data.description is string && data.description.size() > 0 &&
+             data.postedAt is string;
+    }
+
+    function isValidName(name) {
+      return name is map && 
+             name.surname is string && name.surname.size() > 0 &&
+             name.firstName is string && name.firstName.size() > 0 &&
+             name.otherName is string;
+    }
+
+    function isValidCandidate(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'role']) &&
+             data.role == 'candidate' &&
+             isValidName(data.name) &&
+             data.email is string && data.email.matches('^.+@.+$') &&
+             data.phone is string && data.phone.size() >= 10 &&
+             (!('guarantors' in data) || (data.guarantors is list && data.guarantors.size() <= 2)) &&
+             (!('desiredPositions' in data) || data.desiredPositions is list) &&
+             (!('jobLocations' in data) || data.jobLocations is list) &&
+             (!('assignedAgentId' in data) || data.assignedAgentId is string) &&
+             (!('photoUrl' in data) || data.photoUrl is string) &&
+             (!('deletionRequestedAt' in data) || data.deletionRequestedAt is string);
+    }
+
+    function isValidStaff(data) {
+      return data.keys().hasAll(['fullName', 'email', 'role']) &&
+             data.role in ['admin', 'recruiter', 'agent'] &&
+             (!('photoUrl' in data) || data.photoUrl is string) &&
+             (!('deletionRequestedAt' in data) || data.deletionRequestedAt is string);
+    }
+
+    function isValidClient(data) {
+      return data.keys().hasAll(['companyName', 'contactPerson', 'email', 'phone']) &&
+             data.companyName is string && data.companyName.size() > 0 &&
+             data.contactPerson is string && data.contactPerson.size() > 0 &&
+             isValidEmail(data.email) &&
+             data.phone is string &&
+             (!('assignedAgentId' in data) || data.assignedAgentId is string) &&
+             (!('photoUrl' in data) || data.photoUrl is string) &&
+             (!('deletionRequestedAt' in data) || data.deletionRequestedAt is string);
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['senderId', 'receiverId', 'content', 'createdAt', 'read', 'type']) &&
+             data.senderId == request.auth.uid &&
+             data.receiverId is string &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.createdAt is string &&
+             data.read is bool &&
+             data.type in ['staff-client', 'staff-candidate'];
+    }
+
+    function isValidApplication(data) {
+      return data.keys().hasAll(['candidateId', 'status']) &&
+             data.status in ['Screening', 'Interview', 'Offered', 'Placed'];
+    }
+
+    function isValidUpdate(data) {
+      return data.keys().hasOnly(['type', 'title', 'content', 'authorId', 'createdAt', 'expiryDate', 'mediaUrl', 'published', 'bookmarkCount']) &&
+             data.keys().hasAll(['type', 'title', 'content', 'authorId', 'createdAt']) &&
+             data.type in ['Vacancy', 'Announcement', 'News', 'Article'] &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
+             data.authorId is string && data.authorId.size() > 0 &&
+             (!('expiryDate' in data) || data.expiryDate is string) &&
+             (!('mediaUrl' in data) || data.mediaUrl is string && data.mediaUrl.size() < 500) &&
+             (!('published' in data) || data.published is bool) &&
+             (!('bookmarkCount' in data) || data.bookmarkCount is number);
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['userId', 'userName', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.userName is string && data.userName.size() > 0 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 1000 &&
+             data.createdAt is string;
+    }
+
+    function isValidBookmark(data) {
+      return data.keys().hasAll(['userId', 'updateId', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.updateId is string &&
+             data.createdAt is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /candidates/{candidateId} {
+      allow read: if isOwner(candidateId) || isStaff();
+      allow create: if isOwner(candidateId) && isValidCandidate(request.resource.data);
+      allow update: if (isOwner(candidateId) || isStaff()) && 
+                    isValidCandidate(request.resource.data) &&
+                    (!isDeletionRequested(resource.data) || (isOwner(candidateId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletionRequestedAt'])));
+      allow delete: if canAdminDelete(resource.data);
+    }
+
+    match /staff/{staffId} {
+      allow read: if isAuthenticated();
+      allow write: if (isOwner(staffId) || isAdmin()) && 
+                   isValidStaff(request.resource.data) &&
+                   (!isDeletionRequested(resource.data) || (isOwner(staffId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletionRequestedAt'])));
+      allow delete: if canAdminDelete(resource.data);
+    }
+
+    match /clients/{clientId} {
+      allow read: if isOwner(clientId) || isStaff();
+      allow create: if isStaff() && isValidClient(request.resource.data);
+      allow update: if (isOwner(clientId) || isStaff()) && 
+                    isValidClient(request.resource.data) &&
+                    (!isDeletionRequested(resource.data) || (isOwner(clientId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletionRequestedAt'])));
+      allow delete: if canAdminDelete(resource.data);
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.receiverId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAdmin();
+    }
+
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.candidateId) || isStaff());
+      allow create: if isAuthenticated() && (isOwner(request.resource.data.candidateId) || isStaff()) && isValidApplication(request.resource.data);
+      allow update: if isStaff() && isValidApplication(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if isStaff() && isValidJob(request.resource.data);
+      allow update: if isStaff() && isValidJob(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /newsletter/{email} {
+      allow create: if isValidEmail(email) && request.resource.data.email == email;
+      allow read, update: if (isAuthenticated() && request.auth.token.email == email) || isStaff();
+      allow delete: if isStaff();
+    }
+
+    match /contactRequests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /updates/{updateId} {
+      allow read: if true;
+      allow create: if isStaff() && isValidUpdate(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+      allow update: if (isStaff() && isValidUpdate(request.resource.data) && request.resource.data.authorId == resource.data.authorId && request.resource.data.createdAt == resource.data.createdAt) ||
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookmarkCount']));
+      allow delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow delete: if isOwner(resource.data.userId) || isStaff();
+      }
+    }
+
+    match /bookmarks/{bookmarkId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidBookmark(request.resource.data);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    match /mail/{mailId} {
+      allow create: if isAuthenticated();
+      allow read: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

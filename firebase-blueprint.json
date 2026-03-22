@@ -1,0 +1,295 @@
+{
+  "entities": {
+    "Job": {
+      "title": "Job",
+      "description": "Job posting details.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "location": { "type": "string" },
+        "type": { "type": "string", "enum": ["Full-time", "Part-time", "Contract"] },
+        "description": { "type": "string" },
+        "salaryRange": { "type": "string" },
+        "postedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "company", "location", "type", "description", "postedAt"]
+    },
+    "Newsletter": {
+      "title": "Newsletter",
+      "description": "Newsletter subscriptions with job preferences.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "subscribedAt": { "type": "string", "format": "date-time" },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "jobTitle": { "type": "string" },
+            "location": { "type": "string" },
+            "jobType": { "type": "string", "enum": ["Full-time", "Part-time", "Contract", "All"] }
+          }
+        }
+      },
+      "required": ["email"]
+    },
+    "ContactRequest": {
+      "title": "Contact Request",
+      "description": "Client contact requests.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "company": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "message"]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "Job candidate personal and professional details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "assignedAgentId": { "type": "string", "description": "The staff member assigned to this candidate." },
+        "name": {
+          "type": "object",
+          "properties": {
+            "surname": { "type": "string" },
+            "firstName": { "type": "string" },
+            "otherName": { "type": "string" }
+          }
+        },
+        "address": { "type": "string" },
+        "dob": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "nationality": { "type": "string" },
+        "stateOfOrigin": { "type": "string" },
+        "lga": { "type": "string" },
+        "religion": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "maritalStatus": { "type": "string", "enum": ["Single", "Married", "Divorced", "Widowed"] },
+        "handicap": { "type": "boolean" },
+        "handicapDetails": { "type": "string" },
+        "validIdNumber": { "type": "string" },
+        "idType": { "type": "string" },
+        "nextOfKin": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "object",
+              "properties": {
+                "surname": { "type": "string" },
+                "firstName": { "type": "string" },
+                "otherName": { "type": "string" }
+              }
+            },
+            "address": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "whatsapp": { "type": "string" },
+            "relationship": { "type": "string" }
+          }
+        },
+        "desiredPositions": { "type": "array", "items": { "type": "string" } },
+        "jobLocations": { "type": "array", "items": { "type": "string" } },
+        "jobMode": { "type": "string", "enum": ["Remote", "On-site", "Hybrid"] },
+        "yearsOfExperience": { "type": "number" },
+        "guarantors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "object",
+                "properties": {
+                  "surname": { "type": "string" },
+                  "firstName": { "type": "string" },
+                  "otherName": { "type": "string" }
+                }
+              },
+              "address": { "type": "string" },
+              "phone": { "type": "string" },
+              "email": { "type": "string" },
+              "dob": { "type": "string" },
+              "gender": { "type": "string", "enum": ["Male", "Female"] },
+              "relationshipToCandidate": { "type": "string" },
+              "occupation": { "type": "string" },
+              "workAddress": { "type": "string" },
+              "howLongKnown": { "type": "string" },
+              "whatsapp": { "type": "string" }
+            }
+          }
+        },
+        "acquaintances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "surname": { "type": "string" },
+              "firstName": { "type": "string" },
+              "otherName": { "type": "string" }
+            }
+          }
+        },
+        "highestQualification": { "type": "string" },
+        "currentEmploymentStatus": { "type": "string" },
+        "expectedSalary": { "type": "string" },
+        "resumeUrl": { "type": "string", "format": "uri" },
+        "role": { "type": "string", "enum": ["candidate"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "paymentConfirmed": { "type": "boolean" },
+        "submitted": { "type": "boolean" }
+      },
+      "required": ["name", "email", "phone", "role"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "Internal staff details.",
+      "type": "object",
+      "properties": {
+        "staffId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "recruiter", "agent"] },
+        "assignedClients": { "type": "array", "items": { "type": "string" } },
+        "performanceMetrics": { "type": "object" },
+        "email": { "type": "string", "format": "email" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["fullName", "email", "role"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Client (Company) details.",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "companyName": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "assignedAgentId": { "type": "string" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["companyName", "email"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Communication between users.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["staff-client", "staff-candidate"] }
+      },
+      "required": ["senderId", "receiverId", "content", "createdAt"]
+    },
+    "Application": {
+      "title": "Application",
+      "description": "Job application bridge.",
+      "type": "object",
+      "properties": {
+        "candidateId": { "type": "string" },
+        "jobId": { "type": "string" },
+        "status": { "type": "string", "enum": ["Screening", "Interview", "Offered", "Placed"] },
+        "staffNotes": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["candidateId", "status"]
+    },
+    "Update": {
+      "title": "Update",
+      "description": "Vacancies, announcements, articles, and news.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Vacancy", "Announcement", "News", "Article"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "mediaUrl": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "published": { "type": "boolean" },
+        "bookmarkCount": { "type": "number" }
+      },
+      "required": ["type", "title", "content", "authorId", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comments on updates.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "content", "createdAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "User bookmarks for updates.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "updateId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "updateId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Collection of job candidates."
+    },
+    "/staff/{staffId}": {
+      "schema": "Staff",
+      "description": "Collection of internal staff."
+    },
+    "/applications/{applicationId}": {
+      "schema": "Application",
+      "description": "Collection of job applications."
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Collection of job postings."
+    },
+    "/newsletter/{email}": {
+      "schema": "Newsletter",
+      "description": "Newsletter subscribers."
+    },
+    "/contactRequests/{requestId}": {
+      "schema": "ContactRequest",
+      "description": "Client contact messages."
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Collection of clients."
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Direct messages between staff, clients, and candidates."
+    },
+    "/updates/{updateId}": {
+      "schema": "Update",
+      "description": "Collection of announcements and news."
+    },
+    "/updates/{updateId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on a specific update."
+    },
+    "/bookmarks/{bookmarkId}": {
+      "schema": "Bookmark",
+      "description": "User bookmarks."
+    }
+  }
+}
+
+
