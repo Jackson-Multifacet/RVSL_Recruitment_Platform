@@ -1,5 +1,6 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
+import rateLimit from "express-rate-limit";
+import { Resend } from "resend";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -12,13 +13,78 @@ async function startServer() {
 
   app.use(express.json());
 
-  // API routes
+  const generalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please slow down.' }
+  });
+  app.use('/api/', generalLimiter);
+
+  const aiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'AI request limit reached. Please wait a moment.' }
+  });
+
+  const resend = new Resend(process.env.RESEND_API_KEY || 're_123');
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Vite middleware for development
+  app.post("/api/send-email", async (req, res) => {
+    try {
+      const { to, subject, html } = req.body;
+      if (!to || !subject || !html) {
+        return res.status(400).json({ error: "Missing required email fields (to, subject, html)" });
+      }
+
+      const { data, error } = await resend.emails.send({
+        from: 'RVSL Platform <onboarding@resend.dev>',
+        to,
+        subject,
+        html,
+      });
+
+      if (error) {
+        return res.status(400).json({ error });
+      }
+
+      res.json({ success: true, data });
+    } catch (error: any) {
+      console.error("Email Route Error:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.post("/api/assistant", aiLimiter, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Missing prompt" });
+      }
+
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("AI Route Error:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",

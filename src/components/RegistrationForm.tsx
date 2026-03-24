@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePaystackPayment } from 'react-paystack';
-import { 
-  User, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Briefcase, 
-  Users, 
-  ShieldCheck, 
-  ChevronRight, 
+import {
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Briefcase,
+  Users,
+  ShieldCheck,
+  ChevronRight,
   ChevronLeft,
   CheckCircle2,
   AlertCircle,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Candidate, NameFields } from '../types';
 import { db, auth, storage } from '../firebase';
+import { sendEmail, emailTemplates } from '../services/emailService';
 import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
@@ -143,8 +144,7 @@ export default function RegistrationForm() {
 
   const handleNext = () => {
     setError(null);
-    
-    // Validate current step
+
     if (currentStep === 0 && !agreed) {
       setError('You must agree to the terms and conditions to proceed.');
       return;
@@ -193,7 +193,7 @@ export default function RegistrationForm() {
       }
     }
     if (currentStep === 5) {
-      // Bio Data step (Acquaintances) - optional or just pass
+
     }
 
     if (currentStep < STEPS.length - 1) {
@@ -216,8 +216,8 @@ export default function RegistrationForm() {
       const user = auth.currentUser;
       if (!user) throw new Error('You must be logged in to save.');
       await setDoc(doc(db, 'candidates', user.uid), { ...formData, id: user.uid });
-      // Form saved successfully!
-      setCurrentStep(prev => prev); // Trigger re-render if needed or just show a small toast
+
+      setCurrentStep(prev => prev);
     } catch (err: any) {
       setError(err.message);
     }
@@ -241,24 +241,16 @@ export default function RegistrationForm() {
         submitted: true
       });
 
-      // Send automated email notification
       if (formData.email) {
-        await setDoc(doc(collection(db, 'mail')), {
+        const template = emailTemplates.applicationConfirmation(
+          formData.name?.firstName || 'Candidate'
+        );
+
+        await sendEmail({
           to: formData.email,
-          message: {
-            subject: 'Registration Successful - Real Value & Stakes Limited',
-            html: `
-              <h2>Welcome to Real Value & Stakes Limited!</h2>
-              <p>Dear ${formData.name?.firstName || 'Candidate'},</p>
-              <p>Your registration has been successfully submitted and your payment has been confirmed.</p>
-              <p>Our team will review your profile and contact you regarding next steps and potential job matches.</p>
-              <p>You can log in to your dashboard anytime to view your profile and track your applications.</p>
-              <br/>
-              <p>Best regards,</p>
-              <p>The RVSL Team</p>
-            `
-          }
-        });
+          subject: template.subject,
+          html: template.html
+        }).catch(err => console.error('Failed to send confirmation email:', err));
       }
 
       setSuccess(true);
@@ -277,7 +269,7 @@ export default function RegistrationForm() {
         </div>
         <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white mb-2">Registration Complete!</h2>
         <p className="text-slate-600 dark:text-slate-400 mb-8">Your application has been submitted to RVSL. Our recruiters will review it and get back to you.</p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="px-8 py-3 bg-orange-600 text-white rounded-xl font-medium shadow-lg hover:bg-orange-700 transition-colors"
         >
@@ -289,12 +281,12 @@ export default function RegistrationForm() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      {/* Progress Indicator */}
+      {}
       <div className="mb-8">
         <div className="flex justify-between items-center relative">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 dark:bg-slate-800 -z-10" />
-          <div 
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-orange-600 transition-all duration-300 -z-10" 
+          <div
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-orange-600 transition-all duration-300 -z-10"
             style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
           />
           {STEPS.map((step, idx) => {
@@ -397,7 +389,7 @@ function TermsStep({ agreed, setAgreed }: { agreed: boolean, setAgreed: (v: bool
       <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white text-center">Terms & Conditions</h2>
       <div className="prose prose-slate dark:prose-invert max-w-none h-80 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Registration Terms and Conditions</h3>
-        
+
         <p className="mb-4 text-slate-700 dark:text-slate-300">
           Welcome to the Real Value & Stakes Limited candidate registration portal. By proceeding with this registration, you agree to the following terms and conditions as outlined in our official documentation:
         </p>
@@ -451,25 +443,18 @@ function PersonalStep({ formData, updateFormData, staffList }: any) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white text-center">Personal Details</h2>
-      
+
       <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-900/20 mb-6">
         <label className="text-sm font-bold text-orange-900 dark:text-orange-400 flex items-center gap-2 mb-2">
           <UserCheck className="w-4 h-4" /> Select Your Assigned Agent
         </label>
-        <select 
+        <select
           required
-          value={formData.assignedAgentId} 
-          onChange={(e) => updateFormData('assignedAgentId', e.target.value)} 
+          value={formData.assignedAgentId}
+          onChange={(e) => updateFormData('assignedAgentId', e.target.value)}
           className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500 font-medium"
         >
           <option value="">-- Choose an Agent --</option>
-          <option value="Faith Jackson">Faith Jackson</option>
-          <option value="John Udom">John Udom</option>
-          <option value="Jackson Osas">Jackson Osas</option>
-          <option value="Joy Ukandu">Joy Ukandu</option>
-          <option value="Victor Amen">Victor Amen</option>
-          <option value="Edidiong Ekanem">Edidiong Ekanem</option>
-          <option value="Oluwafemi Titus">Oluwafemi Titus</option>
           {staffList.map((staff: any) => (
             <option key={staff.id} value={staff.id}>{staff.fullName}</option>
           ))}
@@ -623,6 +608,12 @@ function EmploymentStep({ formData, updateFormData }: any) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 10MB.');
+      e.target.value = '';
+      return;
+    }
+
     const fileRef = ref(storage, `resumes/${auth.currentUser?.uid || 'temp'}_${file.name}`);
     const uploadTask = uploadBytesResumable(fileRef, file);
 
@@ -676,16 +667,16 @@ function EmploymentStep({ formData, updateFormData }: any) {
           <p className="text-[10px] text-slate-500 mt-1">Your highest level of education.</p>
         </div>
       </div>
-      
+
       <div className="space-y-4">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Upload Resume (PDF/DOC)</label>
         <div className="flex items-center gap-4">
-          <input 
-            type="file" 
-            accept=".pdf,.doc,.docx" 
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx"
             onChange={handleFileUpload}
             disabled={uploading}
-            className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 dark:file:bg-orange-900/30 dark:file:text-orange-400" 
+            className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 dark:file:bg-orange-900/30 dark:file:text-orange-400"
           />
         </div>
         {uploading && (
@@ -722,6 +713,12 @@ function GuarantorStep({ formData, updateFormData }: any) {
   const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 5MB.');
+      e.target.value = '';
+      return;
+    }
 
     const fileRef = ref(storage, `guarantor_ids/${auth.currentUser?.uid || 'temp'}_guarantor_${idx}_${file.name}`);
     const uploadTask = uploadBytesResumable(fileRef, file);
@@ -773,7 +770,7 @@ function GuarantorStep({ formData, updateFormData }: any) {
           </div>
 
           <NameInput label="Full Name" value={g.name} update={(path, val) => updateFormData(`guarantors.${idx}.name.${path}`, val)} />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Occupation</label>
@@ -825,12 +822,12 @@ function GuarantorStep({ formData, updateFormData }: any) {
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upload Valid ID</label>
-            <input 
-              type="file" 
-              accept="image/*,.pdf" 
+            <input
+              type="file"
+              accept="image/*,.pdf"
               onChange={(e) => handleIdUpload(e, idx)}
               disabled={uploading[idx]}
-              className="w-full px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 dark:file:bg-orange-900/30 dark:file:text-orange-400" 
+              className="w-full px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 dark:file:bg-orange-900/30 dark:file:text-orange-400"
             />
             {uploading[idx] && (
               <div className="w-full bg-slate-200 rounded-full h-1.5 dark:bg-slate-700 mt-2">
@@ -890,7 +887,7 @@ function PaymentStep({ paymentConfirmed, setPaymentConfirmed, formData }: any) {
   const config = {
     reference: (new Date()).getTime().toString(),
     email: formData.email || 'candidate@example.com',
-    amount: amount * 100, // Paystack amount is in kobo
+    amount: amount * 100,
     publicKey: (import.meta as any).env?.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   };
 
@@ -901,7 +898,7 @@ function PaymentStep({ paymentConfirmed, setPaymentConfirmed, formData }: any) {
   };
 
   const onClose = () => {
-    // user closed the payment modal
+
   };
 
   return (
@@ -916,8 +913,8 @@ function PaymentStep({ paymentConfirmed, setPaymentConfirmed, formData }: any) {
       <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl text-sm text-orange-800 dark:text-orange-200 text-left">
         <strong>Note:</strong> Registration fee is ₦10,000 for Graduates (HND, BSc and above) and ₦5,000 for Non-Graduates.
       </div>
-      
-      <button 
+
+      <button
         onClick={() => {
           if (!paymentConfirmed) {
             initializePayment({ onSuccess, onClose });

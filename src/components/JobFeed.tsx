@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Search, MapPin, Briefcase, Sparkles, X } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-import { realAssistant } from '../services/aiService';
+import { assistant } from '../services/assistantService';
 import toast from 'react-hot-toast';
 
 export function JobFeed() {
@@ -48,7 +48,7 @@ export function JobFeed() {
   const handleAiTip = async () => {
     const toastId = toast.loading('Consulting Real Assistant...');
     try {
-      const tip = await realAssistant.chat("Give me a quick career tip for someone looking for a job in Nigeria.");
+      const tip = await assistant.chat("Give me a quick career tip for someone looking for a job in Nigeria.");
       toast.success(tip, { id: toastId, duration: 6000 });
     } catch (error) {
       toast.error('Failed to get AI tip', { id: toastId });
@@ -62,27 +62,27 @@ export function JobFeed() {
           <h2 className="text-3xl font-bold font-display text-slate-900 dark:text-white mb-2">Job Openings</h2>
           <p className="text-slate-500 dark:text-slate-400">Find your next opportunity at RVSL</p>
         </div>
-        
+
         <div className="flex flex-wrap gap-4 items-end">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search jobs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 transition-all"
             />
           </div>
-          
+
           <div className="flex gap-2 w-full md:w-auto">
-            <button 
+            <button
               onClick={handleAiTip}
               className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-xl hover:bg-orange-100 transition-colors flex items-center gap-2 text-sm font-bold"
             >
               <Sparkles className="w-4 h-4" /> AI Tip
             </button>
-            <select 
+            <select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
               className="flex-1 md:flex-none px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm text-slate-600 dark:text-slate-400"
@@ -91,7 +91,7 @@ export function JobFeed() {
               {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
             </select>
 
-            <select 
+            <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="flex-1 md:flex-none px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm text-slate-600 dark:text-slate-400"
@@ -99,9 +99,9 @@ export function JobFeed() {
               <option value="">All Types</option>
               {uniqueTypes.map(type => <option key={type} value={type}>{type}</option>)}
             </select>
-            
+
             {(searchTerm || locationFilter || typeFilter) && (
-              <button 
+              <button
                 onClick={() => { setSearchTerm(''); setLocationFilter(''); setTypeFilter(''); }}
                 className="p-2 text-slate-400 hover:text-orange-600 transition-colors"
                 title="Clear filters"
@@ -123,7 +123,7 @@ export function JobFeed() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center">
           <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500">No jobs found matching your criteria.</p>
-          <button 
+          <button
             onClick={() => { setSearchTerm(''); setLocationFilter(''); setTypeFilter(''); }}
             className="mt-4 text-orange-600 font-bold hover:underline"
           >

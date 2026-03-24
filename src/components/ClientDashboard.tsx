@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
   onSnapshot,
   doc,
   getDoc,
@@ -16,13 +16,13 @@ import {
 import { signOut } from 'firebase/auth';
 import { Client, Message, Update } from '../types';
 import { PendingDeletionOverlay } from './PendingDeletionOverlay';
-import { 
-  Building2, 
-  Users, 
-  MessageSquare, 
-  Bell, 
-  Settings, 
-  LogOut, 
+import {
+  Building2,
+  Users,
+  MessageSquare,
+  Bell,
+  Settings,
+  LogOut,
   Search,
   Briefcase,
   FileText,
@@ -87,11 +87,10 @@ export default function ClientDashboard({ user }: { user: any }) {
           setSelectedStaffId(clientDoc.data().assignedAgentId);
         }
       }
-      
-      // Fetch staff list for messages
+
       const staffSnapshot = await getDocs(collection(db, 'staff'));
       setStaffList(staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      
+
       setLoading(false);
     };
 
@@ -110,8 +109,8 @@ export default function ClientDashboard({ user }: { user: any }) {
     <button
       onClick={() => setActiveTab(id)}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-        activeTab === id 
-          ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' 
+        activeTab === id
+          ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
           : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
       }`}
     >
@@ -123,12 +122,12 @@ export default function ClientDashboard({ user }: { user: any }) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       {clientProfile?.deletionRequestedAt && (
-        <PendingDeletionOverlay 
-          deletionRequestedAt={clientProfile.deletionRequestedAt} 
-          onCancel={handleCancelDeletion} 
+        <PendingDeletionOverlay
+          deletionRequestedAt={clientProfile.deletionRequestedAt}
+          onCancel={handleCancelDeletion}
         />
       )}
-      {/* Sidebar */}
+      {}
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-6 hidden md:flex flex-col gap-8">
         <div className="flex items-center gap-2 px-2">
           <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
@@ -145,7 +144,7 @@ export default function ClientDashboard({ user }: { user: any }) {
         </nav>
 
         <div className="mt-auto">
-          <button 
+          <button
             onClick={() => auth.signOut()}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-bold text-sm"
           >
@@ -155,7 +154,7 @@ export default function ClientDashboard({ user }: { user: any }) {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {}
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         {activeTab === 'overview' && (
           <div className="space-y-8">
@@ -202,7 +201,7 @@ export default function ClientDashboard({ user }: { user: any }) {
                       {staffList.find(s => s.id === selectedStaffId)?.fullName}
                     </h3>
                     <p className="text-slate-500">Recruitment Specialist</p>
-                    <button 
+                    <button
                       onClick={() => setActiveTab('messages')}
                       className="mt-4 px-6 py-2 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20"
                     >
@@ -222,9 +221,9 @@ export default function ClientDashboard({ user }: { user: any }) {
         {activeTab === 'messages' && (
           <div className="max-w-5xl mx-auto space-y-6">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Communication Center</h2>
-            <ChatManager 
-              currentUserId={user.uid} 
-              userRole="client" 
+            <ChatManager
+              currentUserId={user.uid}
+              userRole="client"
               preSelectedContactId={selectedStaffId || undefined}
             />
           </div>
@@ -235,9 +234,9 @@ export default function ClientDashboard({ user }: { user: any }) {
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Company Profile</h2>
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8">
               <div className="flex flex-col items-center gap-4">
-                <ProfilePhotoUpload 
-                  userId={user.uid} 
-                  collectionName="clients" 
+                <ProfilePhotoUpload
+                  userId={user.uid}
+                  collectionName="clients"
                   currentPhotoUrl={clientProfile?.photoUrl}
                   onUploadSuccess={(url) => setClientProfile(prev => prev ? { ...prev, photoUrl: url } : null)}
                 />
@@ -272,7 +271,7 @@ export default function ClientDashboard({ user }: { user: any }) {
                   <div className="bg-red-50 dark:bg-red-900/10 rounded-3xl p-6 border border-red-100 dark:border-red-900/20">
                     <h4 className="text-sm font-bold text-red-600 mb-2">Danger Zone</h4>
                     <p className="text-xs text-red-500/70 mb-4">Request account deletion. Your company profile will be permanently removed after a 14-day review period.</p>
-                    <button 
+                    <button
                       onClick={handleDeleteAccount}
                       className="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 text-sm"
                     >
@@ -301,7 +300,7 @@ export default function ClientDashboard({ user }: { user: any }) {
         )}
       </main>
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={isConfirmModalOpen}
         title="Request Account Deletion?"
         message="Your company profile will be scheduled for deletion in 14 days. During this period, you will be unable to use the dashboard. You can cancel this request at any time."

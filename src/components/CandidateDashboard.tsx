@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { 
-  Briefcase, MapPin, MessageSquare, Bell, User, Plus, X, Settings, 
-  FileText, Users, Trash2, ChevronRight, CheckCircle2, Clock, 
+import {
+  Briefcase, MapPin, MessageSquare, Bell, User, Plus, X, Settings,
+  FileText, Users, Trash2, ChevronRight, CheckCircle2, Clock,
   AlertCircle, Search, Filter, Bookmark
 } from 'lucide-react';
-import { 
-  doc, getDoc, getDocs, query, collection, where, orderBy, 
-  limit, setDoc, updateDoc, deleteDoc, increment, addDoc, deleteField 
+import {
+  doc, getDoc, getDocs, query, collection, where, orderBy,
+  limit, setDoc, updateDoc, deleteDoc, increment, addDoc, deleteField
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
@@ -80,13 +80,12 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch profile
+
         const profileDoc = await getDoc(doc(db, 'candidates', user.uid));
         if (profileDoc.exists()) {
           setProfile(profileDoc.data());
         }
 
-        // Fetch newsletter preferences
         if (user.email) {
           const newsDoc = await getDoc(doc(db, 'newsletter', user.email));
           if (newsDoc.exists()) {
@@ -94,13 +93,11 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
           }
         }
 
-        // Fetch applications
         const q = query(collection(db, 'applications'), where('candidateId', '==', user.uid));
         const appSnapshot = await getDocs(q);
         const appList = appSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
         setApplications(appList);
 
-        // Fetch jobs for these applications
         const jobIds = Array.from(new Set(appList.map(app => app.jobId)));
         const jobMap: Record<string, any> = {};
         for (const jobId of jobIds) {
@@ -111,12 +108,10 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
         }
         setJobs(jobMap);
 
-        // Fetch updates
         const updateSnapshot = await getDocs(query(collection(db, 'updates'), orderBy('createdAt', 'desc'), limit(20)));
         const updateList = updateSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Update[];
         setUpdates(updateList);
 
-        // Fetch user bookmarks
         const bookmarkSnapshot = await getDocs(query(collection(db, 'bookmarks'), where('userId', '==', user.uid)));
         const bookmarkMap: Record<string, boolean> = {};
         bookmarkSnapshot.docs.forEach(doc => {
@@ -124,7 +119,6 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
         });
         setBookmarks(bookmarkMap);
 
-        // Fetch assigned agent
         if (profileDoc.exists() && profileDoc.data().assignedAgentId) {
           const agentDoc = await getDoc(doc(db, 'staff', profileDoc.data().assignedAgentId));
           if (agentDoc.exists()) {
@@ -145,7 +139,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
     if (!user) return;
     const isBookmarked = bookmarks[updateId];
     const bookmarkId = `${user.uid}_${updateId}`;
-    
+
     try {
       if (isBookmarked) {
         await deleteDoc(doc(db, 'bookmarks', bookmarkId));
@@ -258,13 +252,13 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       {profile?.deletionRequestedAt && (
-        <PendingDeletionOverlay 
-          deletionRequestedAt={profile.deletionRequestedAt} 
-          onCancel={handleCancelDeletion} 
+        <PendingDeletionOverlay
+          deletionRequestedAt={profile.deletionRequestedAt}
+          onCancel={handleCancelDeletion}
         />
       )}
-      
-      {/* Dashboard Header */}
+
+      {}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
@@ -274,7 +268,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
               <p className="text-slate-500 dark:text-slate-400">Manage your applications and stay updated</p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
             {[
               { id: 'applications', label: 'Applications' },
@@ -283,7 +277,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
               { id: 'alerts', label: 'Job Alerts' },
               { id: 'messages', label: 'Message Agent' }
             ].map(tab => (
-              <button 
+              <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -325,8 +319,8 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider 
-                        ${app.status === 'Placed' ? 'bg-emerald-100 text-emerald-700' : 
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                        ${app.status === 'Placed' ? 'bg-emerald-100 text-emerald-700' :
                           app.status === 'Offered' ? 'bg-blue-100 text-blue-700' :
                           app.status === 'Interview' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
                         {app.status}
@@ -341,11 +335,11 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                       <div className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {jobs[app.jobId]?.type}</div>
                     </div>
                   </div>
-                  
+
                   <div className="md:w-64 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Latest Update</h4>
                     <p className="text-sm text-slate-700 dark:text-slate-300 italic">
-                      {app.status === 'Screening' ? 'Your application is currently being reviewed by our team.' : 
+                      {app.status === 'Screening' ? 'Your application is currently being reviewed by our team.' :
                        app.status === 'Interview' ? 'Congratulations! You have been shortlisted for an interview.' :
                        app.status === 'Offered' ? 'An offer has been extended to you. Check your email.' :
                        app.status === 'Placed' ? 'You have successfully been placed in this role!' : 'Status updated.'}
@@ -353,18 +347,18 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                   </div>
                 </div>
 
-                {/* Candidate Progress Tracker (Stepper) */}
+                {}
                 <div className="relative pt-4 pb-8">
                   <div className="absolute top-8 left-0 w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full" />
-                  <div 
-                    className="absolute top-8 left-0 h-1 bg-orange-600 rounded-full transition-all duration-1000" 
+                  <div
+                    className="absolute top-8 left-0 h-1 bg-orange-600 rounded-full transition-all duration-1000"
                     style={{ width: `${(STAGES.indexOf(app.status) / (STAGES.length - 1)) * 100}%` }}
                   />
                   <div className="relative flex justify-between">
                     {STAGES.map((stage, index) => {
                       const isCompleted = STAGES.indexOf(app.status) >= index;
                       const isCurrent = STAGES.indexOf(app.status) === index;
-                      
+
                       return (
                         <div key={stage} className="flex flex-col items-center">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all duration-500 ${
@@ -391,13 +385,13 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
       {activeTab === 'updates' && (
         <div className="space-y-8">
           <div className="flex items-center gap-4 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
-            <button 
+            <button
               onClick={() => setUpdateFilter('all')}
               className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${updateFilter === 'all' ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
               All Updates
             </button>
-            <button 
+            <button
               onClick={() => setUpdateFilter('bookmarked')}
               className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${updateFilter === 'bookmarked' ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
@@ -413,13 +407,13 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
               <div key={update.id} className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group">
                 {update.mediaUrl && (
                   <div className="h-48 overflow-hidden">
-                    <img src={update.mediaUrl} alt={update.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    <img src={update.mediaUrl} alt={update.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="lazy" />
                   </div>
                 )}
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      update.type === 'Vacancy' ? 'bg-emerald-500 text-white' : 
+                      update.type === 'Vacancy' ? 'bg-emerald-500 text-white' :
                       update.type === 'Article' ? 'bg-purple-500 text-white' : 'bg-blue-500 text-white'
                     }`}>
                       {update.type}
@@ -428,17 +422,17 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">{update.title}</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 mb-6 leading-relaxed">{update.content}</p>
-                  
+
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-4">
-                      <button 
+                      <button
                         onClick={() => { setSelectedUpdate(update); fetchComments(update.id); }}
                         className="flex items-center gap-1 text-slate-400 hover:text-orange-600 transition-colors"
                       >
                         <MessageSquare className="w-4 h-4" />
                         <span className="text-xs font-bold">Comments</span>
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleToggleBookmark(update.id)}
                         className={`flex items-center gap-1 transition-colors ${bookmarks[update.id] ? 'text-orange-600' : 'text-slate-400 hover:text-orange-600'}`}
                       >
@@ -447,7 +441,16 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                       </button>
                     </div>
                     {update.type === 'Vacancy' && (
-                      <button className="text-xs font-bold text-orange-600 hover:underline">Quick Apply</button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('applications');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          toast.success('Visit the Jobs section below to apply for vacancies!');
+                        }}
+                        className="text-xs font-bold text-orange-600 hover:underline"
+                      >
+                        Quick Apply
+                      </button>
                     )}
                   </div>
                 </div>
@@ -455,7 +458,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
             ))}
           </div>
 
-          {/* Comments Section */}
+          {}
           <div className="sticky top-8 h-fit">
             {selectedUpdate ? (
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-right-4 duration-300">
@@ -463,13 +466,13 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                   <h3 className="font-bold text-slate-900 dark:text-white">Comments</h3>
                   <button onClick={() => setSelectedUpdate(null)} className="text-xs text-slate-400 hover:text-slate-600">Close</button>
                 </div>
-                
+
                 <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                   {comments.map(comment => (
                     <div key={comment.id} className="flex gap-3">
                       <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {comment.authorPhotoUrl ? (
-                          <img src={comment.authorPhotoUrl} alt={comment.authorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <img src={comment.authorPhotoUrl} alt={comment.authorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                         ) : (
                           <User className="w-4 h-4 text-slate-400" />
                         )}
@@ -489,7 +492,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
 
                 <form onSubmit={handlePostComment} className="relative">
-                  <textarea 
+                  <textarea
                     placeholder="Write a comment..."
                     required
                     rows={3}
@@ -497,7 +500,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                     onChange={e => setNewComment(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 text-sm resize-none"
                   />
-                  <button 
+                  <button
                     type="submit"
                     disabled={isCommenting || !newComment.trim()}
                     className="absolute bottom-3 right-3 p-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-all disabled:opacity-50"
@@ -521,7 +524,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold font-display text-slate-900 dark:text-white">My Profile</h3>
-            <button 
+            <button
               onClick={() => setIsEditingProfile(!isEditingProfile)}
               className="px-6 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-xl font-bold hover:bg-orange-100 transition-all flex items-center gap-2"
             >
@@ -557,9 +560,9 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
-                  <input 
-                    type="text" 
-                    value={profile?.fullName || ''} 
+                  <input
+                    type="text"
+                    value={profile?.fullName || ''}
                     onChange={e => setProfile({...profile, fullName: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     required
@@ -567,8 +570,8 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gender</label>
-                  <select 
-                    value={profile?.gender || ''} 
+                  <select
+                    value={profile?.gender || ''}
                     onChange={e => setProfile({...profile, gender: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   >
@@ -579,26 +582,26 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date of Birth</label>
-                  <input 
-                    type="date" 
-                    value={profile?.dob || ''} 
+                  <input
+                    type="date"
+                    value={profile?.dob || ''}
                     onChange={e => setProfile({...profile, dob: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nationality</label>
-                  <input 
-                    type="text" 
-                    value={profile?.nationality || ''} 
+                  <input
+                    type="text"
+                    value={profile?.nationality || ''}
                     onChange={e => setProfile({...profile, nationality: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Marital Status</label>
-                  <select 
-                    value={profile?.maritalStatus || ''} 
+                  <select
+                    value={profile?.maritalStatus || ''}
                     onChange={e => setProfile({...profile, maritalStatus: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   >
@@ -611,9 +614,9 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    value={profile?.phone || ''} 
+                  <input
+                    type="tel"
+                    value={profile?.phone || ''}
                     onChange={e => setProfile({...profile, phone: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     required
@@ -621,18 +624,18 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">WhatsApp</label>
-                  <input 
-                    type="tel" 
-                    value={profile?.whatsapp || ''} 
+                  <input
+                    type="tel"
+                    value={profile?.whatsapp || ''}
                     onChange={e => setProfile({...profile, whatsapp: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Address</label>
-                  <input 
-                    type="text" 
-                    value={profile?.address || ''} 
+                  <input
+                    type="text"
+                    value={profile?.address || ''}
                     onChange={e => setProfile({...profile, address: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     required
@@ -640,8 +643,8 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Highest Qualification</label>
-                  <select 
-                    value={profile?.highestQualification || ''} 
+                  <select
+                    value={profile?.highestQualification || ''}
                     onChange={e => setProfile({...profile, highestQualification: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   >
@@ -660,17 +663,17 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Years of Experience</label>
-                  <input 
-                    type="number" 
-                    value={profile?.yearsOfExperience || ''} 
+                  <input
+                    type="number"
+                    value={profile?.yearsOfExperience || ''}
                     onChange={e => setProfile({...profile, yearsOfExperience: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Job Mode</label>
-                  <select 
-                    value={profile?.jobMode || ''} 
+                  <select
+                    value={profile?.jobMode || ''}
                     onChange={e => setProfile({...profile, jobMode: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                   >
@@ -683,9 +686,9 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Expected Salary</label>
-                  <input 
-                    type="text" 
-                    value={profile?.expectedSalary || ''} 
+                  <input
+                    type="text"
+                    value={profile?.expectedSalary || ''}
                     onChange={e => setProfile({...profile, expectedSalary: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="e.g. N150,000 - N200,000"
@@ -700,27 +703,27 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Next of Kin Name</label>
-                    <input 
-                      type="text" 
-                      value={profile?.nextOfKin?.name || ''} 
+                    <input
+                      type="text"
+                      value={profile?.nextOfKin?.name || ''}
                       onChange={e => setProfile({...profile, nextOfKin: { ...profile?.nextOfKin, name: e.target.value }})}
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Relationship</label>
-                    <input 
-                      type="text" 
-                      value={profile?.nextOfKin?.relationship || ''} 
+                    <input
+                      type="text"
+                      value={profile?.nextOfKin?.relationship || ''}
                       onChange={e => setProfile({...profile, nextOfKin: { ...profile?.nextOfKin, relationship: e.target.value }})}
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Next of Kin Phone</label>
-                    <input 
-                      type="tel" 
-                      value={profile?.nextOfKin?.phone || ''} 
+                    <input
+                      type="tel"
+                      value={profile?.nextOfKin?.phone || ''}
                       onChange={e => setProfile({...profile, nextOfKin: { ...profile?.nextOfKin, phone: e.target.value }})}
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
                     />
@@ -728,7 +731,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                 </div>
               </div>
 
-              <button 
+              <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full py-4 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20 disabled:opacity-50"
@@ -814,9 +817,9 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                     </div>
                     {profile?.resumeUrl && (
                       <div className="py-2">
-                        <a 
-                          href={profile.resumeUrl} 
-                          target="_blank" 
+                        <a
+                          href={profile.resumeUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 text-orange-600 font-bold hover:underline"
                         >
@@ -855,7 +858,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
                       <h4 className="text-lg font-bold text-red-600 mb-1">Danger Zone</h4>
                       <p className="text-sm text-red-500/70">Request account deletion. Your data will be permanently removed after a 14-day review period.</p>
                     </div>
-                    <button 
+                    <button
                       onClick={handleDeleteAccount}
                       className="px-8 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
                     >
@@ -870,7 +873,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
         </div>
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
         message={confirmModal.message}

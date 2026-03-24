@@ -47,20 +47,20 @@ export function UpdatesFeed() {
           <div key={update.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 group flex flex-col">
             {update.mediaUrl && (
               <div className="h-56 overflow-hidden relative">
-                <img 
-                  src={update.mediaUrl} 
-                  alt={update.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                  referrerPolicy="no-referrer" 
+                <img
+                  src={update.mediaUrl}
+                  alt={update.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
             )}
             <div className="p-8 flex-1 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] 
-                  ${update.type === 'Vacancy' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 
-                    update.type === 'Article' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em]
+                  ${update.type === 'Vacancy' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' :
+                    update.type === 'Article' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' :
                     'bg-orange-600 text-white shadow-lg shadow-orange-600/20'}`}>
                   {update.type}
                 </span>
@@ -68,15 +68,15 @@ export function UpdatesFeed() {
                   {new Date(update.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
-              
+
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 leading-tight group-hover:text-orange-600 transition-colors">
                 {update.title}
               </h3>
-              
+
               <p className="text-slate-600 dark:text-slate-400 line-clamp-3 mb-8 leading-relaxed text-sm">
                 {update.content}
               </p>
-              
+
               <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">

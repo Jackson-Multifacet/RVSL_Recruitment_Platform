@@ -19,7 +19,6 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({ userId, 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Basic validation
     if (file.size > 5 * 1024 * 1024) {
       alert('File is too large. Max size is 5MB.');
       return;
@@ -27,13 +26,13 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({ userId, 
 
     setUploading(true);
     try {
-      // Use a unique name to avoid cache issues
+
       const timestamp = Date.now();
       const storageRef = ref(storage, `profile_photos/${userId}/${timestamp}_${file.name}`);
-      
+
       const uploadResult = await uploadBytes(storageRef, file);
       const photoUrl = await getDownloadURL(uploadResult.ref);
-      
+
       await updateDoc(doc(db, collectionName, userId), {
         photoUrl: photoUrl
       });

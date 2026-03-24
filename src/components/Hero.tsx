@@ -16,7 +16,7 @@ export function Hero({ onLogin }: { onLogin: () => void }) {
         Join the RVSL network today. We connect top talent with premium opportunities across industries. Professional, reliable, and mobile-first.
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
-        <button 
+        <button
           onClick={onLogin}
           className="px-12 py-4 bg-orange-600 text-white rounded-2xl font-bold shadow-xl hover:bg-orange-700 transition-all transform hover:-translate-y-1 flex items-center gap-2"
         >

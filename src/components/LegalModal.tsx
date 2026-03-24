@@ -21,7 +21,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
-        {/* Header */}
+        {}
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600">
@@ -32,7 +32,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
               <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Real Value & Stakes Limited</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400"
           >
@@ -40,15 +40,15 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
           </button>
         </div>
 
-        {/* Tabs */}
+        {}
         <div className="flex border-b border-slate-100 dark:border-slate-800 px-6 bg-white dark:bg-slate-900">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-6 py-4 text-sm font-bold transition-all relative ${
-                activeTab === tab.id 
-                  ? 'text-orange-600' 
+                activeTab === tab.id
+                  ? 'text-orange-600'
                   : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
@@ -61,14 +61,14 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
           ))}
         </div>
 
-        {/* Content */}
+        {}
         <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 dark:bg-slate-950/30">
           <div className="prose prose-slate dark:prose-invert max-w-none">
             {activeTab === 'privacy' && (
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Privacy Policy</h3>
                 <p className="text-slate-600 dark:text-slate-400">Last Updated: March 18, 2026</p>
-                
+
                 <section className="space-y-4">
                   <h4 className="text-lg font-bold text-slate-900 dark:text-white">1. Introduction</h4>
                   <p>Real Value & Stakes Limited ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our recruitment platform.</p>
@@ -150,7 +150,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
             {activeTab === 'licenses' && (
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Licenses & Attributions</h3>
-                
+
                 <section className="space-y-4">
                   <h4 className="text-lg font-bold text-slate-900 dark:text-white">Software License</h4>
                   <p>The Real Value & Stakes platform is a proprietary software developed by Real Value & Stakes Limited. All rights reserved.</p>
@@ -177,9 +177,9 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
           </div>
         </div>
 
-        {/* Footer */}
+        {}
         <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end">
-          <button 
+          <button
             onClick={onClose}
             className="px-8 py-3 bg-orange-600 text-white rounded-2xl font-bold hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20"
           >

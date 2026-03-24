@@ -1,27 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: candidates
-    // Document ID: userId
-    // Fields: fullName, email, phone, role, etc.
-    //
-    // Collection: staff
-    // Document ID: userId
-    // Fields: fullName, email, role, etc.
-    //
-    // Collection: applications
-    // Document ID: auto-generated
-    // Fields: candidateId, jobId, status, etc.
-    //
-    // ===============================================================
 
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -35,24 +15,17 @@ service cloud.firestore {
     }
 
     function canAdminDelete(data) {
-      return isAdmin() && isDeletionRequested(data) && 
+      return isAdmin() && isDeletionRequested(data) &&
              (request.time >= timestamp(data.deletionRequestedAt) + duration.value(14, 'd'));
     }
 
     function isUserBlocked(userId) {
-      // This is expensive if used everywhere, but necessary for "not able to do anything"
-      // We can check if the user's own document has deletionRequestedAt
-      // Since we can't easily check other collections without get(), 
-      // we'll rely on the app to block UI and rules to block specific actions.
-      return false; // Placeholder for logic if we had a better way
+
+      return false;
     }
 
     function isStaff() {
-      return isAuthenticated() && 
-        (
-         ('email' in request.auth.token && request.auth.token.email == "faithjohnjackson@gmail.com") ||
-         exists(/databases/$(database)/documents/staff/$(request.auth.uid))
-        );
+      return isAuthenticated() && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
     }
 
     function isClient() {
@@ -60,11 +33,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-        (
-         ('email' in request.auth.token && request.auth.token.email == "faithjohnjackson@gmail.com") ||
-         (exists(/databases/$(database)/documents/staff/$(request.auth.uid)) && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin')
-        );
+      return isAuthenticated() &&
+        (exists(/databases/$(database)/documents/staff/$(request.auth.uid)) && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin');
     }
 
     function isValidEmail(email) {
@@ -82,7 +52,7 @@ service cloud.firestore {
     }
 
     function isValidName(name) {
-      return name is map && 
+      return name is map &&
              name.surname is string && name.surname.size() > 0 &&
              name.firstName is string && name.firstName.size() > 0 &&
              name.otherName is string;
@@ -131,8 +101,10 @@ service cloud.firestore {
     }
 
     function isValidApplication(data) {
-      return data.keys().hasAll(['candidateId', 'status']) &&
-             data.status in ['Screening', 'Interview', 'Offered', 'Placed'];
+      return data.keys().hasAll(['candidateId', 'jobId', 'status']) &&
+             data.status in ['Screening', 'Interview', 'Offered', 'Placed'] &&
+             data.jobId is string &&
+             exists(/databases/$(database)/documents/jobs/$(data.jobId));
     }
 
     function isValidUpdate(data) {
@@ -163,14 +135,10 @@ service cloud.firestore {
              data.createdAt is string;
     }
 
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
     match /candidates/{candidateId} {
       allow read: if isOwner(candidateId) || isStaff();
       allow create: if isOwner(candidateId) && isValidCandidate(request.resource.data);
-      allow update: if (isOwner(candidateId) || isStaff()) && 
+      allow update: if (isOwner(candidateId) || isStaff()) &&
                     isValidCandidate(request.resource.data) &&
                     (!isDeletionRequested(resource.data) || (isOwner(candidateId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletionRequestedAt'])));
       allow delete: if canAdminDelete(resource.data);
@@ -178,7 +146,7 @@ service cloud.firestore {
 
     match /staff/{staffId} {
       allow read: if isAuthenticated();
-      allow write: if (isOwner(staffId) || isAdmin()) && 
+      allow write: if (isOwner(staffId) || isAdmin()) &&
                    isValidStaff(request.resource.data) &&
                    (!isDeletionRequested(resource.data) || (isOwner(staffId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletionRequestedAt'])));
       allow delete: if canAdminDelete(resource.data);
@@ -187,7 +155,7 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow read: if isOwner(clientId) || isStaff();
       allow create: if isStaff() && isValidClient(request.resource.data);
-      allow update: if (isOwner(clientId) || isStaff()) && 
+      allow update: if (isOwner(clientId) || isStaff()) &&
                     isValidClient(request.resource.data) &&
                     (!isDeletionRequested(resource.data) || (isOwner(clientId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletionRequestedAt'])));
       allow delete: if canAdminDelete(resource.data);

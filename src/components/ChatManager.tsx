@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
-import { 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  getDocs 
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDocs
 } from 'firebase/firestore';
 import { MessageSystem } from './MessageSystem';
 import { Search, User, MessageSquare, Building2, Shield, Loader2, Circle } from 'lucide-react';
@@ -49,7 +49,7 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
         const allContacts: Contact[] = [];
 
         if (userRole === 'staff') {
-          // Staff can message candidates and clients
+
           const candSnapshot = await getDocs(collection(db, 'candidates'));
           candSnapshot.docs.forEach(doc => {
             const data = doc.data();
@@ -75,7 +75,7 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
             });
           });
         } else {
-          // Candidates and Clients can message staff
+
           const staffSnapshot = await getDocs(collection(db, 'staff'));
           staffSnapshot.docs.forEach(doc => {
             const data = doc.data();
@@ -103,7 +103,6 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
   useEffect(() => {
     if (!currentUserId) return;
 
-    // Listen for all unread messages for the current user
     const q = query(
       collection(db, 'messages'),
       where('receiverId', '==', currentUserId),
@@ -124,7 +123,7 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
     return () => unsubscribe();
   }, [currentUserId]);
 
-  const filteredContacts = contacts.filter(contact => 
+  const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contact.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -139,12 +138,12 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
-      {/* Contact List */}
+      {}
       <div className="md:col-span-1 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
+            <input
               type="text"
               placeholder="Search contacts..."
               value={searchQuery}
@@ -161,12 +160,12 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
             </div>
           ) : (
             filteredContacts.map(contact => (
-              <button 
+              <button
                 key={contact.id}
                 onClick={() => setSelectedContact(contact)}
                 className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all relative ${
-                  selectedContact?.id === contact.id 
-                    ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border border-orange-100 dark:border-orange-900/30' 
+                  selectedContact?.id === contact.id
+                    ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border border-orange-100 dark:border-orange-900/30'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-transparent'
                 }`}
               >
@@ -194,14 +193,14 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
         </div>
       </div>
 
-      {/* Chat Area */}
+      {}
       <div className="md:col-span-2 h-full">
         {selectedContact ? (
-          <MessageSystem 
+          <MessageSystem
             currentUserId={currentUserId}
             otherUserId={selectedContact.id}
             otherUserName={selectedContact.name}
-            type={userRole === 'staff' 
+            type={userRole === 'staff'
               ? (selectedContact.type === 'client' ? 'staff-client' : 'staff-candidate')
               : (userRole === 'client' ? 'staff-client' : 'staff-candidate')
             }

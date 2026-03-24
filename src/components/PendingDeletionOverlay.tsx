@@ -38,7 +38,7 @@ export const PendingDeletionOverlay: React.FC<PendingDeletionOverlayProps> = ({ 
     <div className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl border border-red-100 dark:border-red-900/20 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-red-600 animate-pulse" />
-        
+
         <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
           <Trash2 className="w-10 h-10 text-red-600" />
         </div>
@@ -59,7 +59,7 @@ export const PendingDeletionOverlay: React.FC<PendingDeletionOverlayProps> = ({ 
         </div>
 
         <div className="flex flex-col gap-3">
-          <button 
+          <button
             onClick={onCancel}
             className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
           >

@@ -51,12 +51,12 @@ export function Newsletter({ userEmail = '', initialPreferences = null }: Newsle
           { id: 'articles', label: 'Career Articles', icon: Bell },
           { id: 'news', label: 'Company News', icon: Bell }
         ].map(item => (
-          <button 
+          <button
             key={item.id}
             onClick={() => setPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
             className={`p-6 rounded-3xl border-2 transition-all text-left group ${
-              preferences[item.id] 
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10' 
+              preferences[item.id]
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
                 : 'border-slate-100 dark:border-slate-800 hover:border-slate-200'
             }`}
           >
@@ -74,12 +74,12 @@ export function Newsletter({ userEmail = '', initialPreferences = null }: Newsle
         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 block">Notification Frequency</label>
         <div className="flex gap-4">
           {['daily', 'weekly', 'monthly'].map(freq => (
-            <button 
+            <button
               key={freq}
               onClick={() => setPreferences({ ...preferences, frequency: freq })}
               className={`px-6 py-2 rounded-xl text-sm font-bold capitalize transition-all ${
-                preferences.frequency === freq 
-                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' 
+                preferences.frequency === freq
+                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
                   : 'bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -89,7 +89,7 @@ export function Newsletter({ userEmail = '', initialPreferences = null }: Newsle
         </div>
       </div>
 
-      <button 
+      <button
         onClick={handleSave}
         disabled={isSaving}
         className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold hover:scale-[1.02] transition-all disabled:opacity-50"

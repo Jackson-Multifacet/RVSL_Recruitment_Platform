@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot, 
-  addDoc, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  addDoc,
   serverTimestamp,
   updateDoc,
   doc,
@@ -33,7 +33,6 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
   useEffect(() => {
     if (!currentUserId || !otherUserId) return;
 
-    // Query 1: current user is sender, other user is receiver
     const q1 = query(
       collection(db, 'messages'),
       where('senderId', '==', currentUserId),
@@ -41,7 +40,6 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
       where('type', '==', type)
     );
 
-    // Query 2: current user is receiver, other user is sender
     const q2 = query(
       collection(db, 'messages'),
       where('receiverId', '==', currentUserId),
@@ -54,13 +52,12 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
 
     const updateMessages = () => {
       const allMessages = [...messages1, ...messages2];
-      // Sort client-side by createdAt
+
       allMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      
+
       setMessages(allMessages);
       setLoading(false);
-      
-      // Mark unread messages as read
+
       allMessages.forEach(msg => {
         if (msg.receiverId === currentUserId && !msg.read) {
           updateDoc(doc(db, 'messages', msg.id), { read: true });
@@ -127,7 +124,7 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
 
   return (
     <div className="flex flex-col h-[500px] bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-      {/* Header */}
+      {}
       <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
           <User className="w-5 h-5" />
@@ -138,8 +135,8 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div 
+      {}
+      <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-6 space-y-4 scroll-smooth"
       >
@@ -154,8 +151,8 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] p-4 rounded-2xl shadow-sm ${
-                isMe 
-                  ? 'bg-orange-600 text-white rounded-tr-none' 
+                isMe
+                  ? 'bg-orange-600 text-white rounded-tr-none'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-none'
               }`}>
                 <p className="text-sm leading-relaxed">{msg.content}</p>
@@ -173,17 +170,17 @@ export const MessageSystem: React.FC<MessageSystemProps> = ({ currentUserId, oth
         })}
       </div>
 
-      {/* Input Area */}
+      {}
       <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
         <div className="flex gap-2">
-          <input 
+          <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
             className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 transition-all"
           />
-          <button 
+          <button
             type="submit"
             disabled={!newMessage.trim() || sending}
             className="p-3 bg-orange-600 text-white rounded-2xl hover:bg-orange-700 transition-all disabled:opacity-50 shadow-lg shadow-orange-600/20"
