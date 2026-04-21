@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { Resend } from "resend";
 import path from "path";
 import { fileURLToPath } from "url";
+import * as Sentry from "@sentry/node";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,17 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Initialize Sentry error tracking
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: 0.1,
+    });
+
+    app.use((req: any, res: any, next: any) => Sentry.captureException(req, next));
+  }
 
   app.use(express.json());
 
@@ -97,6 +109,20 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Add Sentry error handler (must be after other middleware)
+  if (process.env.SENTRY_DSN) {
+    app.use((err: any, req: any, res: any, next: any) => {
+      Sentry.captureException(err);
+      next(err);
+    });
+  }
+
+  // Global error handler
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);

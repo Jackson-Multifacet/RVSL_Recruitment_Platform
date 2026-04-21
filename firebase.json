@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "gen-lang-client-0171636872",
+    "site": "realvalueplatform",
     "public": "dist",
     "ignore": [
       "firebase.json",

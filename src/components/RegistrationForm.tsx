@@ -19,6 +19,7 @@ import {
 import { Candidate, NameFields } from '../types';
 import { db, auth, storage } from '../firebase';
 import { sendEmail, emailTemplates } from '../services/emailService';
+import { useErrorHandler } from '../utils/hooks';
 import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
@@ -35,22 +36,26 @@ const STEPS = [
 export default function RegistrationForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [staffList, setStaffList] = useState<{id: string, fullName: string}[]>([]);
+  const { handleFirestoreError, handleNetworkError, showError, showSuccess } = useErrorHandler();
 
   useEffect(() => {
     const fetchStaff = async () => {
-      const querySnapshot = await getDocs(collection(db, 'staff'));
-      const staff = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        fullName: doc.data().fullName
-      }));
-      setStaffList(staff);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'staff'));
+        const staff = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          fullName: doc.data().fullName
+        }));
+        setStaffList(staff);
+      } catch (err) {
+        handleFirestoreError(err, 'fetch_staff');
+      }
     };
     fetchStaff();
-  }, []);
+  }, [handleFirestoreError]);
 
   const [formData, setFormData] = useState<Partial<Candidate>>({
     assignedAgentId: '',
@@ -143,53 +148,51 @@ export default function RegistrationForm() {
   const [agreed, setAgreed] = useState(false);
 
   const handleNext = () => {
-    setError(null);
-
     if (currentStep === 0 && !agreed) {
-      setError('You must agree to the terms and conditions to proceed.');
+      showError('You must agree to the terms and conditions to proceed.');
       return;
     }
     if (currentStep === 1) {
-      if (!formData.assignedAgentId) return setError('Please select an assigned agent.');
-      if (!formData.name?.surname || !formData.name?.firstName) return setError('Please provide your surname and first name.');
-      if (!formData.address) return setError('Please provide your address.');
-      if (!formData.dob) return setError('Please provide your date of birth.');
-      if (!formData.nationality) return setError('Please provide your nationality.');
-      if (!formData.stateOfOrigin) return setError('Please provide your state of origin.');
-      if (!formData.lga) return setError('Please provide your LGA.');
-      if (!formData.religion) return setError('Please provide your religion.');
-      if (!formData.phone) return setError('Please provide your phone number.');
-      if (!formData.email) return setError('Please provide your email address.');
-      if (!formData.idType) return setError('Please select your valid ID type.');
-      if (!formData.validIdNumber) return setError('Please provide your valid ID number.');
-      if (formData.handicap && !formData.handicapDetails) return setError('Please provide details about your handicap.');
+      if (!formData.assignedAgentId) return showError('Please select an assigned agent.');
+      if (!formData.name?.surname || !formData.name?.firstName) return showError('Please provide your surname and first name.');
+      if (!formData.address) return showError('Please provide your address.');
+      if (!formData.dob) return showError('Please provide your date of birth.');
+      if (!formData.nationality) return showError('Please provide your nationality.');
+      if (!formData.stateOfOrigin) return showError('Please provide your state of origin.');
+      if (!formData.lga) return showError('Please provide your LGA.');
+      if (!formData.religion) return showError('Please provide your religion.');
+      if (!formData.phone) return showError('Please provide your phone number.');
+      if (!formData.email) return showError('Please provide your email address.');
+      if (!formData.idType) return showError('Please select your valid ID type.');
+      if (!formData.validIdNumber) return showError('Please provide your valid ID number.');
+      if (formData.handicap && !formData.handicapDetails) return showError('Please provide details about your handicap.');
     }
     if (currentStep === 2) {
-      if (!formData.nextOfKin?.name?.surname || !formData.nextOfKin?.name?.firstName) return setError('Please provide your next of kin\'s surname and first name.');
-      if (!formData.nextOfKin?.address) return setError('Please provide your next of kin\'s address.');
-      if (!formData.nextOfKin?.phone) return setError('Please provide your next of kin\'s phone number.');
-      if (!formData.nextOfKin?.relationship) return setError('Please provide your relationship with your next of kin.');
+      if (!formData.nextOfKin?.name?.surname || !formData.nextOfKin?.name?.firstName) return showError('Please provide your next of kin\'s surname and first name.');
+      if (!formData.nextOfKin?.address) return showError('Please provide your next of kin\'s address.');
+      if (!formData.nextOfKin?.phone) return showError('Please provide your next of kin\'s phone number.');
+      if (!formData.nextOfKin?.relationship) return showError('Please provide your relationship with your next of kin.');
     }
     if (currentStep === 3) {
-      if (!formData.highestQualification) return setError('Please select your highest qualification.');
-      if (!formData.currentEmploymentStatus) return setError('Please select your current employment status.');
-      if (!formData.resumeUrl) return setError('Please upload your resume.');
-      if (!formData.desiredPositions || !formData.desiredPositions[0]) return setError('Please provide at least one desired position.');
-      if (!formData.jobLocations || !formData.jobLocations[0]) return setError('Please provide at least one preferred job location.');
+      if (!formData.highestQualification) return showError('Please select your highest qualification.');
+      if (!formData.currentEmploymentStatus) return showError('Please select your current employment status.');
+      if (!formData.resumeUrl) return showError('Please upload your resume.');
+      if (!formData.desiredPositions || !formData.desiredPositions[0]) return showError('Please provide at least one desired position.');
+      if (!formData.jobLocations || !formData.jobLocations[0]) return showError('Please provide at least one preferred job location.');
     }
     if (currentStep === 4) {
       for (let i = 0; i < 2; i++) {
         const g = formData.guarantors?.[i];
-        if (!g?.name?.surname || !g?.name?.firstName) return setError(`Please provide Guarantor ${i + 1}'s surname and first name.`);
-        if (!g?.address) return setError(`Please provide Guarantor ${i + 1}'s address.`);
-        if (!g?.phone) return setError(`Please provide Guarantor ${i + 1}'s phone number.`);
-        if (!g?.relationshipToCandidate) return setError(`Please provide Guarantor ${i + 1}'s relationship to you.`);
-        if (!g?.occupation) return setError(`Please provide Guarantor ${i + 1}'s occupation.`);
-        if (!g?.workAddress) return setError(`Please provide Guarantor ${i + 1}'s work address.`);
-        if (!g?.howLongKnown) return setError(`Please specify how long you have known Guarantor ${i + 1}.`);
-        if (!g?.idType) return setError(`Please select Guarantor ${i + 1}'s ID type.`);
-        if (!g?.idNumber) return setError(`Please provide Guarantor ${i + 1}'s ID number.`);
-        if (!g?.idUrl) return setError(`Please upload Guarantor ${i + 1}'s valid ID.`);
+        if (!g?.name?.surname || !g?.name?.firstName) return showError(`Please provide Guarantor ${i + 1}'s surname and first name.`);
+        if (!g?.address) return showError(`Please provide Guarantor ${i + 1}'s address.`);
+        if (!g?.phone) return showError(`Please provide Guarantor ${i + 1}'s phone number.`);
+        if (!g?.relationshipToCandidate) return showError(`Please provide Guarantor ${i + 1}'s relationship to you.`);
+        if (!g?.occupation) return showError(`Please provide Guarantor ${i + 1}'s occupation.`);
+        if (!g?.workAddress) return showError(`Please provide Guarantor ${i + 1}'s work address.`);
+        if (!g?.howLongKnown) return showError(`Please specify how long you have known Guarantor ${i + 1}.`);
+        if (!g?.idType) return showError(`Please select Guarantor ${i + 1}'s ID type.`);
+        if (!g?.idNumber) return showError(`Please provide Guarantor ${i + 1}'s ID number.`);
+        if (!g?.idUrl) return showError(`Please upload Guarantor ${i + 1}'s valid ID.`);
       }
     }
     if (currentStep === 5) {
@@ -216,20 +219,22 @@ export default function RegistrationForm() {
       const user = auth.currentUser;
       if (!user) throw new Error('You must be logged in to save.');
       await setDoc(doc(db, 'candidates', user.uid), { ...formData, id: user.uid });
-
-      setCurrentStep(prev => prev);
-    } catch (err: any) {
-      setError(err.message);
+      showSuccess('Draft saved successfully');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'You must be logged in to save.') {
+        showError('You must be logged in to save.');
+      } else {
+        handleFirestoreError(err, 'save_draft');
+      }
     }
   };
 
   const handleSubmit = async () => {
     if (!paymentConfirmed) {
-      setError('Please complete the payment to submit your registration.');
+      showError('Please complete the payment to submit your registration.');
       return;
     }
     setIsSubmitting(true);
-    setError(null);
     try {
       const user = auth.currentUser;
       if (!user) throw new Error('You must be logged in to register.');
@@ -246,16 +251,26 @@ export default function RegistrationForm() {
           formData.name?.firstName || 'Candidate'
         );
 
-        await sendEmail({
-          to: formData.email,
-          subject: template.subject,
-          html: template.html
-        }).catch(err => console.error('Failed to send confirmation email:', err));
+        try {
+          await sendEmail({
+            to: formData.email,
+            subject: template.subject,
+            html: template.html
+          });
+        } catch (emailErr) {
+          console.warn('Email notification failed:', emailErr);
+          // Don't fail registration if email send fails
+        }
       }
 
+      showSuccess('Registration submitted successfully!');
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit registration.');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'You must be logged in to register.') {
+        showError('You must be logged in to register.');
+      } else {
+        handleFirestoreError(err, 'submit_registration');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -306,12 +321,7 @@ export default function RegistrationForm() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3 text-red-700 dark:text-red-400">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
+
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
         <AnimatePresence mode="wait">
@@ -334,25 +344,28 @@ export default function RegistrationForm() {
 
         <div className="p-6 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-4">
           <button
+            type="button"
             onClick={handleBack}
             disabled={currentStep === 0 || isSubmitting}
-            className="flex items-center gap-2 px-6 py-3 text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             <ChevronLeft className="w-5 h-5" />
             Back
           </button>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleSave}
               disabled={isSubmitting}
-              className="px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-300 transition-colors"
+              className="px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               Save Draft
             </button>
             <button
+              type="button"
               onClick={handleNext}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-8 py-3 bg-orange-600 text-white rounded-xl font-medium shadow-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-8 py-3 bg-orange-600 text-white rounded-xl font-medium shadow-lg hover:bg-orange-700 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               {isSubmitting ? 'Submitting...' : currentStep === STEPS.length - 1 ? 'Submit Registration' : 'Continue'}
               {currentStep < STEPS.length - 1 && <ChevronRight className="w-5 h-5" />}
@@ -375,9 +388,9 @@ const NameInput: React.FC<NameInputProps> = ({ label, value, update }) => {
     <div className="space-y-2">
       <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</label>
       <div className="grid grid-cols-3 gap-2">
-        <input type="text" placeholder="Surname" value={value.surname} onChange={(e) => update('surname', e.target.value)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-        <input type="text" placeholder="First Name" value={value.firstName} onChange={(e) => update('firstName', e.target.value)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-        <input type="text" placeholder="Other Name" value={value.otherName} onChange={(e) => update('otherName', e.target.value)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        <input aria-label="Surname" type="text" placeholder="Surname" value={value.surname} onChange={(e) => update('surname', e.target.value)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        <input aria-label="First name" type="text" placeholder="First Name" value={value.firstName} onChange={(e) => update('firstName', e.target.value)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        <input aria-label="Other name" type="text" placeholder="Other Name" value={value.otherName} onChange={(e) => update('otherName', e.target.value)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
       </div>
     </div>
   );
@@ -915,13 +928,14 @@ function PaymentStep({ paymentConfirmed, setPaymentConfirmed, formData }: any) {
       </div>
 
       <button
+        type="button"
         onClick={() => {
           if (!paymentConfirmed) {
             initializePayment({ onSuccess, onClose });
           }
         }}
         disabled={paymentConfirmed}
-        className={`px-8 py-4 rounded-xl font-bold ${paymentConfirmed ? 'bg-emerald-600 text-white' : 'bg-orange-600 text-white hover:bg-orange-700'}`}
+        className={`px-8 py-4 rounded-xl font-bold ${paymentConfirmed ? 'bg-emerald-600 text-white' : 'bg-orange-600 text-white hover:bg-orange-700'} focus:outline-none focus:ring-2 focus:ring-orange-500`}
       >
         {paymentConfirmed ? 'Payment Confirmed' : 'Pay with Paystack'}
       </button>

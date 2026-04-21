@@ -52,7 +52,7 @@ export function ClientContact() {
                   rows={4}
                   className="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-2xl outline-none focus:bg-white/20 transition-all placeholder:text-orange-100 resize-none"
                 />
-                <button className="w-full py-5 bg-white text-orange-600 rounded-2xl font-black text-lg hover:bg-orange-50 transition-all shadow-xl flex items-center justify-center gap-2">
+                <button type="submit" className="w-full py-5 bg-white text-orange-600 rounded-2xl font-black text-lg hover:bg-orange-50 transition-all shadow-xl flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                   Send Request <ExternalLink className="w-5 h-5" />
                 </button>
               </form>

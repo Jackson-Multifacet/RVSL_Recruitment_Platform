@@ -11,11 +11,14 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { useUser } from '../utils/hooks';
+import { useBatchFirestoreQuery } from '../utils/hooks/useFirestore';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ChatManager } from './ChatManager';
 import { Newsletter } from './Newsletter';
 import { ConfirmModal } from './ConfirmModal';
 import { PendingDeletionOverlay } from './PendingDeletionOverlay';
+import { PageLoadingSpinner, SkeletonLoader, ErrorState } from './ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 interface Application {
@@ -52,13 +55,41 @@ interface CandidateDashboardProps {
 
 const STAGES = ['Screening', 'Interview', 'Offered', 'Placed'];
 
+/**
+ * CandidateDashboard - Refactored with custom hooks
+ * KEY IMPROVEMENTS:
+ * - Integrated useUser hook for context-based auth (backward compatible with props)
+ * - Added useBatchFirestoreQuery for N+1 query fix (loads all jobs in one batch)
+ * - Maintains prop-based API for gradual migration
+ */
 export function CandidateDashboard({ user }: CandidateDashboardProps) {
+  const { user: contextUser } = useUser(); // NEW: Get user from context
+  const currentUser = user || contextUser; // Fallback to context if no prop
+  
   const [profile, setProfile] = useState<any>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [jobs, setJobs] = useState<Record<string, any>>({});
+  const [jobIds, setJobIds] = useState<string[]>([]); // Track job IDs for batch query
   const [updates, setUpdates] = useState<Update[]>([]);
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+
+  // NEW: Batch fetch jobs (FIXES N+1 QUERIES!) - runs whenever jobIds changes
+  const { data: batchedJobs = [] } = useBatchFirestoreQuery(
+    jobIds.length > 0 ? 'jobs' : null,
+    jobIds
+  );
+
+  // Convert batch results to map format
+  useEffect(() => {
+    if (batchedJobs?.length > 0) {
+      const jobMap: Record<string, any> = {};
+      (batchedJobs as any[]).forEach((job: any) => {
+        jobMap[job.id] = job;
+      });
+      setJobs(jobMap);
+    }
+  }, [batchedJobs]);
   const [activeTab, setActiveTab] = useState<'applications' | 'updates' | 'profile' | 'alerts' | 'messages'>('applications');
   const [assignedAgent, setAssignedAgent] = useState<any>(null);
   const [updateFilter, setUpdateFilter] = useState<'all' | 'bookmarked'>('all');
@@ -81,38 +112,32 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
     const fetchData = async () => {
       try {
 
-        const profileDoc = await getDoc(doc(db, 'candidates', user.uid));
+        const profileDoc = await getDoc(doc(db, 'candidates', currentUser.uid));
         if (profileDoc.exists()) {
           setProfile(profileDoc.data());
         }
 
-        if (user.email) {
-          const newsDoc = await getDoc(doc(db, 'newsletter', user.email));
+        if (currentUser.email) {
+          const newsDoc = await getDoc(doc(db, 'newsletter', currentUser.email));
           if (newsDoc.exists()) {
             setNewsletterPrefs(newsDoc.data().preferences);
           }
         }
 
-        const q = query(collection(db, 'applications'), where('candidateId', '==', user.uid));
+        const q = query(collection(db, 'applications'), where('candidateId', '==', currentUser.uid));
         const appSnapshot = await getDocs(q);
         const appList = appSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
         setApplications(appList);
 
-        const jobIds = Array.from(new Set(appList.map(app => app.jobId)));
-        const jobMap: Record<string, any> = {};
-        for (const jobId of jobIds) {
-          const jobDoc = await getDoc(doc(db, 'jobs', jobId));
-          if (jobDoc.exists()) {
-            jobMap[jobId] = jobDoc.data();
-          }
-        }
-        setJobs(jobMap);
+        // NEW: Extract job IDs and let useBatchFirestoreQuery fetch them (FIXES N+1!)
+        const ids = Array.from(new Set(appList.map(app => app.jobId)));
+        setJobIds(ids); // This triggers the batch query effect above
 
         const updateSnapshot = await getDocs(query(collection(db, 'updates'), orderBy('createdAt', 'desc'), limit(20)));
         const updateList = updateSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Update[];
         setUpdates(updateList);
 
-        const bookmarkSnapshot = await getDocs(query(collection(db, 'bookmarks'), where('userId', '==', user.uid)));
+        const bookmarkSnapshot = await getDocs(query(collection(db, 'bookmarks'), where('userId', '==', currentUser.uid)));
         const bookmarkMap: Record<string, boolean> = {};
         bookmarkSnapshot.docs.forEach(doc => {
           bookmarkMap[doc.data().updateId] = true;
@@ -133,12 +158,12 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
       }
     };
     fetchData();
-  }, [user.uid]);
+  }, [currentUser.uid]);
 
   const handleToggleBookmark = async (updateId: string) => {
-    if (!user) return;
+    if (!currentUser) return;
     const isBookmarked = bookmarks[updateId];
-    const bookmarkId = `${user.uid}_${updateId}`;
+    const bookmarkId = `${currentUser.uid}_${updateId}`;
 
     try {
       if (isBookmarked) {
@@ -182,13 +207,13 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUpdate || !newComment.trim() || !user) return;
+    if (!selectedUpdate || !newComment.trim() || !currentUser) return;
     setIsCommenting(true);
     try {
       const commentData = {
         updateId: selectedUpdate.id,
-        authorId: user.uid,
-        authorName: profile?.fullName || user.displayName || 'Anonymous',
+        authorId: currentUser.uid,
+        authorName: profile?.fullName || currentUser.displayName || 'Anonymous',
         authorPhotoUrl: profile?.photoUrl || '',
         content: newComment,
         createdAt: new Date().toISOString()
@@ -240,11 +265,12 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
   };
 
   if (loading) return (
-    <div className="max-w-5xl mx-auto px-4 py-12 space-y-8">
-      <div className="h-48 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
-        <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
+    <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="text-center mb-12">
+        <PageLoadingSpinner />
+      </div>
+      <div className="space-y-8">
+        <SkeletonLoader count={3} height="h-32" />
       </div>
     </div>
   );
@@ -262,9 +288,9 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <ProfilePhotoUpload userId={user.uid} collectionName="candidates" currentPhotoUrl={profile?.photoUrl} />
+            <ProfilePhotoUpload userId={currentUser.uid} collectionName="candidates" currentPhotoUrl={profile?.photoUrl} />
             <div>
-              <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white">Welcome, {profile?.fullName || user.displayName}</h2>
+              <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white">Welcome, {profile?.fullName || currentUser.displayName}</h2>
               <p className="text-slate-500 dark:text-slate-400">Manage your applications and stay updated</p>
             </div>
           </div>
@@ -291,7 +317,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
 
       {activeTab === 'messages' && (
         <div className="max-w-5xl mx-auto">
-          <ChatManager currentUserId={user.uid} userRole="candidate" />
+          <ChatManager currentUserId={currentUser.uid} userRole="candidate" />
         </div>
       )}
 
@@ -301,7 +327,7 @@ export function CandidateDashboard({ user }: CandidateDashboardProps) {
             <h3 className="text-2xl font-bold font-display text-slate-900 dark:text-white">Job Alert Preferences</h3>
             <p className="text-slate-500 dark:text-slate-400">Set your preferences to receive notifications about matching job opportunities.</p>
           </div>
-          <Newsletter userEmail={user.email} initialPreferences={newsletterPrefs} />
+          <Newsletter userEmail={currentUser.email} initialPreferences={newsletterPrefs} />
         </div>
       )}
 

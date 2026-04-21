@@ -16,16 +16,27 @@ import {
 } from 'recharts';
 import { toast } from 'react-hot-toast';
 import { auth, db, storage } from '../firebase';
-import { OperationType, handleFirestoreError } from '../utils/firestore';
+import { useUser, useErrorHandler } from '../utils/hooks';
 import { sendEmail, emailTemplates } from '../services/emailService';
 import { ChatManager } from './ChatManager';
 import { ConfirmModal } from './ConfirmModal';
+import { PageLoadingSpinner, SkeletonLoader } from './ui/LoadingSpinner';
 
 const COLORS = ['#ea580c', '#8b5cf6', '#10b981', '#3b82f6', '#f59e0b'];
 
 const STAGES = ['Screening', 'Interview', 'Offered', 'Placed'];
 
-export function StaffDashboard({ user }: { user: any }) {
+/**
+ * StaffDashboard - Refactored with custom hooks
+ * KEY IMPROVEMENTS:
+ * - Integrated useUser hook for context-based auth (backward compatible with props)
+ * - Maintains real-time subscriptions via onSnapshot
+ */
+export function StaffDashboard({ user: userProp }: { user?: any } = {}) {
+  const { user: contextUser } = useUser(); // NEW: Get user from context
+  const { handleFirestoreError } = useErrorHandler();
+  const currentUser = userProp || contextUser; // Fallback to context if no prop
+  
   const [activeTab, setActiveTab] = useState<'analytics' | 'candidates' | 'jobs' | 'updates' | 'messages'>('analytics');
   const [candidates, setCandidates] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -174,11 +185,15 @@ export function StaffDashboard({ user }: { user: any }) {
         }
       }
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `applications/${appId}`);
+      handleFirestoreError(error, 'update_application_status');
     }
   };
 
-  if (loading) return <div className="p-12 text-center animate-pulse">Loading Staff Command Center...</div>;
+  if (loading) return (
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      <PageLoadingSpinner />
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -199,8 +214,9 @@ export function StaffDashboard({ user }: { user: any }) {
           ].map(tab => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-xl' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 ${activeTab === tab.id ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-xl' : 'text-slate-500 hover:text-slate-700'}`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -393,7 +409,7 @@ export function StaffDashboard({ user }: { user: any }) {
 
       {activeTab === 'messages' && (
         <div className="animate-in zoom-in-95 duration-500">
-          <ChatManager currentUserId={user.uid} userRole="staff" />
+          <ChatManager currentUserId={currentUser.uid || currentUser.id} userRole="staff" />
         </div>
       )}
 

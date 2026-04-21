@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { Bell, CheckCircle2, XCircle } from 'lucide-react';
+import { Briefcase, BookOpen, Newspaper, CheckCircle2 } from 'lucide-react';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
@@ -43,58 +43,167 @@ export function Newsletter({ userEmail = '', initialPreferences = null }: Newsle
     }
   };
 
+  const cards = [
+    {
+      id: 'vacancies',
+      label: 'New Vacancies',
+      description: 'Get notified about latest job openings matching your profile',
+      icon: Briefcase,
+      gradient: 'from-blue-500/20 to-cyan-500/20',
+      borderGradient: 'from-blue-400 to-cyan-400',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-500'
+    },
+    {
+      id: 'articles',
+      label: 'Career Articles',
+      description: 'Receive curated career tips, guides, and industry insights',
+      icon: BookOpen,
+      gradient: 'from-purple-500/20 to-pink-500/20',
+      borderGradient: 'from-purple-400 to-pink-400',
+      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500'
+    },
+    {
+      id: 'news',
+      label: 'Company News',
+      description: 'Stay updated with company announcements and culture highlights',
+      icon: Newspaper,
+      gradient: 'from-amber-500/20 to-orange-500/20',
+      borderGradient: 'from-amber-400 to-orange-400',
+      iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500'
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { id: 'vacancies', label: 'New Vacancies', icon: Bell },
-          { id: 'articles', label: 'Career Articles', icon: Bell },
-          { id: 'news', label: 'Company News', icon: Bell }
-        ].map(item => (
-          <button
-            key={item.id}
-            onClick={() => setPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
-            className={`p-6 rounded-3xl border-2 transition-all text-left group ${
-              preferences[item.id]
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
-                : 'border-slate-100 dark:border-slate-800 hover:border-slate-200'
-            }`}
-          >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
-              preferences[item.id] ? 'bg-orange-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-            }`}>
-              {preferences[item.id] ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-            </div>
-            <span className={`font-bold ${preferences[item.id] ? 'text-orange-600' : 'text-slate-500'}`}>{item.label}</span>
-          </button>
-        ))}
+        {cards.map((card, index) => {
+          const IconComponent = card.icon;
+          const isActive = preferences[card.id];
+          
+          return (
+            <button
+              key={card.id}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => setPreferences({ ...preferences, [card.id]: !isActive })}
+              className={`relative group focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 rounded-2xl overflow-hidden transition-smooth ${
+                isActive ? 'btn-scale' : 'hover:scale-102'
+              } ${
+                index === 0 ? 'fade-in' : index === 1 ? 'fade-in' : 'fade-in'
+              }`}
+              style={{
+                animationDelay: `${index * 100}ms`
+              }}
+            >
+              {/* Glassmorphism Background */}
+              <div className={`absolute inset-0 backdrop-blur-xl ${
+                isActive 
+                  ? `bg-gradient-to-br ${card.gradient} border-2 border-orange-300/30` 
+                  : 'bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10'
+              } transition-all duration-300`} />
+
+              {/* Animated gradient border for active state */}
+              {isActive && (
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div className={`absolute inset-0 bg-gradient-to-r ${card.borderGradient} rounded-2xl -z-10 blur-lg opacity-50`} />
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="relative p-6 text-left">
+                {/* Icon Container */}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 ${
+                  isActive 
+                    ? `${card.iconBg} text-white shadow-lg shadow-blue-500/20` 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                }`}>
+                  <IconComponent className="w-6 h-6" />
+                </div>
+
+                {/* Title */}
+                <h3 className={`font-bold text-lg mb-2 transition-colors duration-300 ${
+                  isActive 
+                    ? 'text-slate-900 dark:text-white' 
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}>
+                  {card.label}
+                </h3>
+
+                {/* Description */}
+                <p className={`text-sm leading-relaxed mb-4 transition-colors duration-300 ${
+                  isActive
+                    ? 'text-slate-700 dark:text-slate-200'
+                    : 'text-slate-500 dark:text-slate-500'
+                }`}>
+                  {card.description}
+                </p>
+
+                {/* Status Badge */}
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                  isActive
+                    ? 'bg-green-500/20 text-green-700 dark:text-green-400'
+                    : 'bg-slate-500/10 text-slate-600 dark:text-slate-500'
+                }`}>
+                  {isActive && <CheckCircle2 className="w-4 h-4" />}
+                  <span className="text-xs font-semibold">
+                    {isActive ? 'Subscribed' : 'Not subscribed'}
+                  </span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 block">Notification Frequency</label>
-        <div className="flex gap-4">
-          {['daily', 'weekly', 'monthly'].map(freq => (
-            <button
-              key={freq}
-              onClick={() => setPreferences({ ...preferences, frequency: freq })}
-              className={`px-6 py-2 rounded-xl text-sm font-bold capitalize transition-all ${
-                preferences.frequency === freq
-                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                  : 'bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {freq}
-            </button>
-          ))}
+      {/* Frequency Section with Glassmorphism */}
+      <div className="relative group slide-in-up">
+        <div className="absolute inset-0 backdrop-blur-xl bg-gradient-to-br from-slate-500/10 to-slate-500/5 border border-white/20 dark:border-white/10 rounded-2xl transition-smooth" />
+        
+        <div className="relative p-6 rounded-2xl">
+          <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-4 block">Notification Frequency</label>
+          <div className="flex gap-3 flex-wrap">
+            {['daily', 'weekly', 'monthly'].map((freq, idx) => (
+              <button
+                key={freq}
+                type="button"
+                aria-pressed={preferences.frequency === freq}
+                onClick={() => setPreferences({ ...preferences, frequency: freq })}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-smooth focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                  preferences.frequency === freq
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 scale-105'
+                    : 'backdrop-blur-md bg-white/20 dark:bg-white/10 border border-white/30 text-slate-700 dark:text-slate-300 hover:bg-white/30 dark:hover:bg-white/20 hover:scale-102'
+                }`}
+                style={{
+                  animationDelay: `${200 + idx * 50}ms`
+                }}
+              >
+                {freq}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <button
+        type="button"
         onClick={handleSave}
         disabled={isSaving}
-        className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold hover:scale-[1.02] transition-all disabled:opacity-50"
+        className="group relative w-full overflow-hidden rounded-2xl py-4 font-bold btn-scale focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
       >
-        {isSaving ? 'Saving...' : 'Update Preferences'}
+        {/* Background gradient - main */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 transition-smooth group-hover:shadow-xl group-hover:shadow-orange-500/50" />
+        {/* Background gradient - hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-red-600 to-rose-600 opacity-0 group-hover:opacity-100 transition-smooth" />
+        
+        {/* Content */}
+        <span className="relative flex items-center justify-center text-white gap-2 text-lg">
+          {isSaving ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Saving...
+            </>
+          ) : 'Update Preferences'}
+        </span>
       </button>
     </div>
   );

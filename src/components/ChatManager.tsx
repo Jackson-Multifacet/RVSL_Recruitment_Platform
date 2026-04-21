@@ -162,8 +162,10 @@ export const ChatManager: React.FC<ChatManagerProps> = ({ currentUserId, userRol
             filteredContacts.map(contact => (
               <button
                 key={contact.id}
+                type="button"
+                aria-pressed={selectedContact?.id === contact.id}
                 onClick={() => setSelectedContact(contact)}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all relative ${
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all relative focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                   selectedContact?.id === contact.id
                     ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border border-orange-100 dark:border-orange-900/30'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-transparent'

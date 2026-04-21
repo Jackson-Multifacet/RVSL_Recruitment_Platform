@@ -2,45 +2,50 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig(() => {
-  return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      VitePWA({
-        registerType: 'autoUpdate',
-        manifest: {
-          name: 'RVSL Recruitment Platform',
-          short_name: 'RVSL',
-          description: 'A premium recruitment platform.',
-          theme_color: '#4f46e5',
-          background_color: '#ffffff',
-          display: 'standalone',
-          icons: [
-            {
-              src: '/pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: '/pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            }
-          ]
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss()
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+    },
+  },
+  server: {
+    hmr: process.env.DISABLE_HMR !== 'true',
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          'vendor-ui': ['lucide-react', 'react-hot-toast', 'motion'],
+          'vendor-charts': ['recharts'],
+          // Separate large components into feature chunks
+          'component-dashboards': [
+            './src/components/ClientDashboard.tsx',
+            './src/components/StaffDashboard.tsx',
+            './src/components/CandidateDashboard.tsx'
+          ],
+          'component-forms': [
+            './src/components/RegistrationForm.tsx',
+            './src/components/LoginModal.tsx'
+          ],
         }
-      })
-    ],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
+      }
+    },
+    // Increase chunk size warning limit since we're splitting properly
+    chunkSizeWarningLimit: 600,
+    // Enable minification for production
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
       },
     },
-    server: {
-
-      hmr: process.env.DISABLE_HMR !== 'true',
-    },
-  };
+  },
 });

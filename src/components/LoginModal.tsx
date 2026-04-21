@@ -1,15 +1,15 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Chrome, ArrowRight, Loader2 } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   updateProfile,
   GoogleAuthProvider,
-  signInWithRedirect,
-  sendPasswordResetEmail
+  signInWithRedirect
 } from 'firebase/auth';
 import { auth } from '../firebase';
+import { sendPasswordReset } from '../services/authService';
 import toast from 'react-hot-toast';
 
 interface LoginModalProps {
@@ -50,7 +50,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         await signInWithEmailAndPassword(auth, email, password);
         toast.success('Logged in successfully!');
       } else if (mode === 'reset') {
-        await sendPasswordResetEmail(auth, email);
+        await sendPasswordReset(email);
         toast.success('Password reset email sent!');
         setMode('signin');
       }
@@ -62,11 +62,18 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+      <div role="dialog" aria-modal="true" aria-labelledby="login-modal-title" aria-describedby="login-modal-desc" className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
         <button 
           onClick={onClose}
+          aria-label="Close dialog"
           className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
         >
           <X className="w-5 h-5" />
@@ -74,10 +81,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         <div className="p-8">
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white mb-2">
+            <h2 id="login-modal-title" className="text-2xl font-bold font-display text-slate-900 dark:text-white mb-2">
               {mode === 'signup' ? 'Create an Account' : mode === 'signin' ? 'Welcome Back' : 'Reset Password'}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">
+            <p id="login-modal-desc" className="text-slate-500 dark:text-slate-400 text-sm">
               {mode === 'signup' 
                 ? 'Join RVSL Recruitment Platform' 
                 : mode === 'signin' 
@@ -89,10 +96,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           {mode !== 'reset' && (
             <>
               <button
+                type="button"
                 onClick={handleGoogleLogin}
                 className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all mb-6 group"
               >
-                <Chrome className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                <Chrome aria-hidden="true" className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
                 Continue with Google
               </button>
 
@@ -108,12 +116,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
+              {mode === 'signup' && (
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Full Name</label>
+                <label htmlFor="full-name" className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <User aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
+                    id="full-name"
                     type="text"
                     required
                     value={fullName}
@@ -126,10 +135,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             )}
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
+              <label htmlFor="login-email" className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
+                  id="login-email"
+                  autoFocus
                   type="email"
                   required
                   value={email}
@@ -143,7 +154,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             {mode !== 'reset' && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                  <label htmlFor="login-password" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
                   {mode === 'signin' && (
                     <button
                       type="button"
@@ -155,8 +166,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   )}
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Lock aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
+                    id="login-password"
                     type="password"
                     required
                     value={password}
@@ -186,6 +198,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
           <div className="mt-6 text-center space-y-2">
             <button
+              type="button"
               onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
               className="text-sm text-slate-500 hover:text-orange-600 transition-colors block w-full"
             >
@@ -193,6 +206,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </button>
             {mode === 'reset' && (
               <button
+                type="button"
                 onClick={() => setMode('signin')}
                 className="text-xs text-orange-600 font-bold uppercase tracking-wider hover:text-orange-700 transition-colors"
               >

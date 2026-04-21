@@ -1,14 +1,15 @@
 
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
+import { initializeSentry } from './services/sentry';
 import App from './App.tsx';
 import './index.css';
 
-registerSW({ immediate: true });
+// Initialize Sentry for error tracking and monitoring
+initializeSentry();
 
 if (Capacitor.isNativePlatform()) {
   StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
